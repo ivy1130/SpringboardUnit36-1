@@ -45,11 +45,16 @@ class User {
   /** Update last_login_at for user */
 
   static async updateLoginTimestamp(username) {
-    await db.query(
+    const result = await db.query(
       `UPDATE users
         SET last_login_at = current_timestamp
-        WHERE username = $1`,
+        WHERE username = $1
+        RETURNING username`,
       [username])
+    
+      if (!result.rows[0]) {
+      throw new ExpressError(`No such user: ${username}`, 404);
+    }
   }
 
   /** All: basic info on all users:
@@ -78,6 +83,9 @@ class User {
         FROM users
         WHERE username = $1`,
       [username])
+    if (!result.rows[0]) {
+      throw new ExpressError(`No such user: ${username}`, 404);
+    }
     return result.rows[0]
   }
 
@@ -105,6 +113,9 @@ class User {
       WHERE from_username = $1`,
     [username])
 
+    if (!results.rows[0]) {
+      throw new ExpressError(`No such user: ${username}`, 404);
+    }
     return results.rows.map(m => ({
       id: m.id,
       to_user: {
@@ -144,6 +155,9 @@ class User {
         WHERE to_username = $1`,
       [username])
   
+      if (!results.rows[0]) {
+        throw new ExpressError(`No such user: ${username}`, 404);
+      }
       return results.rows.map(m => ({
         id: m.id,
         from_user: {
