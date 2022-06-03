@@ -1,5 +1,4 @@
 /** User class for message.ly */
-
 const db = require("../db");
 const bcrypt = require("bcrypt");
 const ExpressError = require("../expressError");
@@ -114,7 +113,7 @@ class User {
     [username])
 
     if (!results.rows[0]) {
-      throw new ExpressError(`No such user: ${username}`, 404);
+      throw new ExpressError(`No such user ${username}, or no messages from ${username}`, 404);
     }
     return results.rows.map(m => ({
       id: m.id,
@@ -156,7 +155,7 @@ class User {
       [username])
   
       if (!results.rows[0]) {
-        throw new ExpressError(`No such user: ${username}`, 404);
+        throw new ExpressError(`No such user ${username}, or no messages to ${username}`, 404);
       }
       return results.rows.map(m => ({
         id: m.id,

@@ -1,3 +1,11 @@
+/** Routes for messages. */
+
+const express = require("express");
+const router = new express.Router();
+const ExpressError = require("../expressError");
+const Message = require("../models/message");
+const { ensureLoggedIn } = require("../middleware/auth")
+
 /** GET /:id - get detail of message.
  *
  * => {message: {id,
@@ -11,6 +19,19 @@
  *
  **/
 
+router.get('/:id', ensureLoggedIn, async (req, res, next) => {
+  try {
+    const { username } = req.user
+    const { id } = req.params
+    const result = await Message.get(id)
+    if (username === result.from_user || username === result.to_user) {
+      return res.json({message: result})
+    }
+    throw new ExpressError("Unauthorized", 401)
+  } catch (e) {
+    return next(e)
+  }
+})
 
 /** POST / - post message.
  *
@@ -18,6 +39,20 @@
  *   {message: {id, from_username, to_username, body, sent_at}}
  *
  **/
+
+router.post('/', ensureLoggedIn, async (req, res, next) => {
+  try {
+    const from_username = req.user.username
+    const { to_username, body } = req.body
+    if (!to_username || !body) {
+      throw new ExpressError("Please include a recipient and a message", 400)
+    }
+    const result = await Message.create({ from_username, to_username, body })
+    return res.json({message: result})
+  } catch (e) {
+    return next(e)
+  }
+})
 
 
 /** POST/:id/read - mark message as read:
@@ -28,3 +63,19 @@
  *
  **/
 
+router.post('/:id/read', ensureLoggedIn, async (req, res, next) => {
+  try {
+    const { username } = req.user
+    const { id } = req.params
+    const result = await Message.get(id)
+    if (username === result.to_user) {
+      const resultRead = await Message.markRead(id)
+      return res.json({message: resultRead})
+    }
+    throw new ExpressError("Unauthorized", 401)
+  } catch (e) {
+    return next(e)
+  }
+})
+
+module.exports = router
